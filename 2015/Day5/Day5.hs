@@ -21,7 +21,10 @@ deprecatedStrings = [ "ab"
                     , "xy"
                     ]
 
+<<<<<<< HEAD
                     
+=======
+>>>>>>> day5
 deprecated :: Parser1 Bool
 deprecated = choice $ map (deprecate) deprecatedStrings
   where deprecate str = try (string str) >> return True
@@ -53,7 +56,8 @@ rules1 = do
 rules2 :: Parser2 ()
 rules2 = do
         c <- anyChar
-        try (pairTwice c) >> try (betweenChar c) >> return ()
+        (try (pairTwice c))   <|> return ()
+        (try (betweenChar c)) <|> return ()
         
                    
 niceString1 :: Parser1 Bool
