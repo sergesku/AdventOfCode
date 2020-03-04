@@ -21,10 +21,7 @@ deprecatedStrings = [ "ab"
                     , "xy"
                     ]
 
-<<<<<<< HEAD
-                    
-=======
->>>>>>> day5
+
 deprecated :: Parser1 Bool
 deprecated = choice $ map (deprecate) deprecatedStrings
   where deprecate str = try (string str) >> return True
