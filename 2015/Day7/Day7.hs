@@ -79,13 +79,19 @@ connection = do s <- signal
                 w <- anyChar `manyTill` (() <$ endOfLine <|> eof)
                 return (w,s)
 
-connectionMap :: Parser ConnectionMap
-connectionMap = M.fromList <$> many connection
+getConnectionMap :: ByteString -> ConnectionMap
+getConnectionMap = fromRight M.empty . parse (M.fromList <$> many connection) "" 
 
-solveWire :: String -> ByteString -> Word16 
-solveWire str = evalState (evalSignal (Wire str)) . fromRight M.empty . parse connectionMap ""
+solveWire :: String -> ConnectionMap -> Word16 
+solveWire a = evalState (evalSignal (Wire a))
+
+solveWithReplace :: String -> String -> ConnectionMap -> Word16
+solveWithReplace a b conMap = evalState (evalSignal (Wire a)) newMap
+  where wireA  = solveWire a conMap
+        newMap = M.insert b (Value wireA) conMap
 
 solveWith :: Show a => FilePath -> (ByteString -> a) -> IO ()
 solveWith i f = BS.readFile i >>= print . f
 
-main_part1 = input `solveWith` (solveWire "a")
+main_part1 = input `solveWith` (solveWire "a" . getConnectionMap)
+main_part2 = input `solveWith` (solveWithReplace "a" "b" . getConnectionMap)
