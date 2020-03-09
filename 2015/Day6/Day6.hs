@@ -8,6 +8,7 @@ import Control.Monad (forM, forM_)
 import Control.Monad.ST (ST, runST)
 import Text.Parsec (Parsec, parse, char, string, digit, try, many, many1, spaces, (<|>))
 import Data.Either (fromRight)
+import Criterion.Main
 
 type Point = (Int,Int)
 type Parser = Parsec ByteString ()
@@ -82,3 +83,7 @@ solveWith i f = BS.readFile i >>= print . f . fromRight [] . parse actionRanges 
 
 main_part1 = input `solveWith` setUpLightsBool
 main_part2 = input `solveWith` setUpLightsInt
+
+main = defaultMain [ bench "part1" $ nfIO main_part1
+                   , bench "part2" $ nfIO main_part2
+                   ]
