@@ -2,8 +2,9 @@
 
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as BS (readFile)
-import Data.Ix (range)
-import Data.Array.ST (MArray, STUArray, readArray, writeArray, newArray)
+import Data.Vector.Unboxed (Unbox, Vector)
+import qualified Data.Vector.Unboxed as V (filter, length, sum, unsafeFreeze)
+import Data.Vector.Unboxed.Mutable as V (unsafeModify, replicate)
 import Control.Monad (forM, forM_)
 import Control.Monad.ST (ST, runST)
 import Text.Parsec (Parsec, parse, char, string, digit, try, many, many1, spaces, (<|>))
@@ -47,6 +48,12 @@ actionRanges = many actionRange
     where actionRange = AR <$> action <*> (point <* through) <*> point
           through = lexeme $ string "through"
 
+pointToInt :: Point -> Int
+pointToInt (x,y) = 1000 * x + y
+
+rangeToList :: (Point, Point) -> [Int]
+rangeToList ((x1,y1),(x2,y2))= [pointToInt (x,y) | x <- [x1..x2], y <- [y1..y2]]
+
 dictBool :: Action -> (Bool -> Bool)
 dictBool TurnOn  = const True
 dictBool TurnOff = const False
@@ -57,28 +64,27 @@ dictInt TurnOn  = (+1)
 dictInt TurnOff = max 0 . subtract 1
 dictInt _       = (+2)
 
-setUpLightsBool ::  [ActionRange] -> Int
-setUpLightsBool lst = runST $ do
-        arr <- newArray ledRange False
-        forM_ lst $ apply arr
-        result <- forM (range ledRange) $ readArray arr
-        return . length . filter id $ result
-  where apply :: STUArray s Point Bool -> ActionRange -> ST s ()
-        apply arr (AR action start end) = let f = dictBool action
-                                           in forM_ (range (start, end)) $ \p -> readArray arr p >>= writeArray arr p . f
+countBool :: Vector Bool -> Int
+countBool = V.length . V.filter id
 
-setUpLightsInt ::  [ActionRange] -> Int
-setUpLightsInt lst = runST $ do
-        arr <- newArray ledRange 0
-        forM_ lst $ apply arr
-        result <- forM (range ledRange) $ readArray arr
-        return . sum $ result
-  where apply :: STUArray s Point Int -> ActionRange -> ST s ()
-        apply arr (AR action start end) = let f = dictInt action
-                                           in forM_ (range (start, end)) $ \p -> readArray arr p >>= writeArray arr p . f            
+setUpLights :: Unbox a 
+            => a                        -- function that convert elvish action to appropriate action
+            -> (Action -> (a -> a))     -- initial state of leds
+            -> (Vector a -> Int)        -- function that count brightness of lights
+            -> [ActionRange]            -- just a list of elvish actions
+            -> Int
+            
+setUpLights ini dict counter lst = runST $ do
+            vec <- V.replicate 1000000 ini
+            forM_ lst $ \ (AR action start stop) -> do
+                let f = dict action
+                forM_ (rangeToList (start,stop)) (V.unsafeModify vec f)
+            v <- V.unsafeFreeze vec
+            return $ counter v  
+        
         
 solveWith :: Show a => FilePath -> ([ActionRange] -> a) -> IO ()
 solveWith i f = BS.readFile i >>= print . f . fromRight [] . parse actionRanges ""
 
-main_part1 = input `solveWith` setUpLightsBool
-main_part2 = input `solveWith` setUpLightsInt
+main_part1 = input `solveWith` (setUpLights False dictBool countBool)
+main_part2 = input `solveWith` (setUpLights 0 dictInt V.sum)
