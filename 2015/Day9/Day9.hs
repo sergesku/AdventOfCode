@@ -41,14 +41,15 @@ entry = do
 graph :: Parser Graph
 graph = sepEndBy1 entry endOfLine >> getState
 
-minDistance :: Graph -> Int
-minDistance (m,s) = minimum $ do
+getDistances :: Graph -> [Int]
+getDistances (m,s) = do
         route <- permutations . S.elems $ s
         let routeToEdges = liftA2 zip id tail
             Just ints    = traverse (`M.lookup` m) . routeToEdges $ route 
         return $ sum ints
 
-solveWith :: Show a => FilePath -> (ByteString -> a) -> IO ()
-solveWith i f = BS.readFile i >>= print . f
+solveWith :: FilePath -> ([Int] -> Int) -> IO ()
+solveWith i f = BS.readFile i >>= print . f . getDistances . fromRight emptyGraph . runParser graph emptyGraph ""
 
-main_part1 = input `solveWith` (minDistance . fromRight emptyGraph . runParser graph emptyGraph "")
+main_part1 = input `solveWith` minimum
+main_part2 = input `solveWith` maximum
