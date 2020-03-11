@@ -27,5 +27,8 @@ hasTwoPair _ = False
 correctPassword :: String -> Bool
 correctPassword = and . sequenceA [hasStraight, hasNoDeprecated, hasTwoPair]
 
-main_part1 :: String
-main_part1 = reverse . head . filter (correctPassword) . drop 1 . iterate succString $ reverse input
+nextPassword :: String -> String
+nextPassword = reverse . head . filter (correctPassword) . drop 1 . iterate succString . reverse
+
+main_part1 = nextPassword input
+main_part2 = nextPassword . nextPassword $ input
