@@ -1,5 +1,5 @@
 import Text.Parsec
-import Control.Applicative (liftA2)
+import Data.List
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as BS (readFile)
 
@@ -36,10 +36,23 @@ distance t (Reindeer _ rideS rideT restT) = totalRideTime * rideS
         (rounds, remainder) = t `divMod` roundTime
         totalRideTime       = rounds * rideT + (min rideT remainder)
 
-maxOnTime :: Int -> [Reindeer] -> Int
-maxOnTime t = maximum . map (distance t)
+roundWinners :: [Reindeer] -> Int -> [String]
+roundWinners lst t = snd $ foldr f (0,[]) lst
+  where f d l@(n,ds) | dist == n = (n,(name d):ds)
+                     | dist <  n = l
+                     | dist >  n = (dist,[name d])
+                     where dist = distance t d
 
+maxDistance :: [Reindeer] -> Int -> Int
+maxDistance lst t = maximum $ map (distance t) lst                     
+                     
+maxPoints :: [Reindeer] -> Int -> Int
+maxPoints lst t = head . map length . group . sort $ winners
+  where winners = concatMap (roundWinners lst) [1..t]
+
+                     
 solveWith :: FilePath -> ([Reindeer] -> Int) -> IO ()
 solveWith file f = BS.readFile file >>= print . fmap f . parse getAllReindeers ""
 
-main_part1 = input `solveWith` (maxOnTime time)
+main_part1 = input `solveWith` (`maxDistance` time)
+main_part2 = input `solveWith` (`maxPoints` time)
