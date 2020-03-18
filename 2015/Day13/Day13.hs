@@ -1,12 +1,9 @@
 import Text.Parsec
 import Data.ByteString.Char8 (ByteString)
-import Data.Map (Map)
+import Data.Map.Strict (Map)
 import Data.Set (Set)
 import Data.List (permutations, maximumBy)
-import Control.Applicative (liftA2)
-import Data.Maybe (fromJust)
-import Data.Either (fromRight)
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M 
 import qualified Data.Set as S
 import qualified Data.ByteString.Char8 as BS (readFile)
 
@@ -36,11 +33,19 @@ inputData :: Parser InputData
 inputData = statement `sepEndBy` endOfLine *> getState
 
 solvePuzzle :: InputData -> Int
-solvePuzzle (m,s) = maximum $ (happiness . neighbors) <$> variants
-  where (x:xs)    = S.elems s
-        variants  = (x:) <$> (permutations xs)
-        neighbors = liftA2 zip id (tail . cycle)
-        happiness = sum . map fromJust . map (\(n1,n2) -> liftA2 (+) ((n1,n2) `M.lookup` m) ((n2,n1) `M.lookup` m))
+solvePuzzle (m,s) = maximum $ (totalHappiness . neighbors) <$> variants
+  where (x:xs)                     = S.elems s
+        variants                   = (x:) <$> (permutations xs)
+        neighbors lst              = zip lst (tail (cycle lst))
+        neighborsHappiness (n1,n2) = (M.findWithDefault 0 (n1,n2) m) + (M.findWithDefault 0 (n2,n1) m) 
+        totalHappiness             = sum . map neighborsHappiness
 
-main_part1 = BS.readFile input >>= print . solvePuzzle . fromRight (M.empty, S.empty) . runParser inputData (M.empty, S.empty) ""
-        
+solvePuzzleWith :: [Name] -> InputData -> Int
+solvePuzzleWith lst (m,s) = solvePuzzle (m,newS)
+  where newS = foldr S.insert s lst 
+
+solveWith :: FilePath -> (InputData -> Int) -> IO ()
+solveWith file f = BS.readFile file >>= print . fmap f . runParser inputData (M.empty, S.empty) ""
+
+main_part1 = input `solveWith`(solvePuzzle) 
+main_part2 = input `solveWith`(solvePuzzleWith ["Me"])
