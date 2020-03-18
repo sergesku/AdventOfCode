@@ -1,10 +1,10 @@
 import Text.Parsec
 import Data.ByteString.Char8 (ByteString)
-import Data.Map.Strict (Map)
 import Data.Set (Set)
+import Data.Map.Strict (Map)
 import Data.List (permutations, maximumBy)
-import qualified Data.Map.Strict as M 
-import qualified Data.Set as S
+import qualified Data.Set as S (empty, elems, insert)
+import qualified Data.Map.Strict as M (empty, findWithDefault, insert)
 import qualified Data.ByteString.Char8 as BS (readFile)
 
 type Name = String
