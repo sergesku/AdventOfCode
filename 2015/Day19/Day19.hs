@@ -31,8 +31,8 @@ variants str (k,v) = map fn [1..n-1]
           fn x = let (l,r) = splitAt x lst
                   in (intercalate k l ++ v ++ intercalate k r)
 
-allVariants :: String -> [Replacement] -> [String]
-allVariants str = concatMap (variants str)
+allVariants :: [Replacement] -> String -> [String]
+allVariants lst str = concatMap (variants str) lst
 
 main_part1 = BS.readFile file >>= print . fmap fn . parse puzzleInput ""
-  where fn = \(lst, str) -> length . group . sort . allVariants str $ lst
+  where fn = length . group . sort . uncurry allVariants
